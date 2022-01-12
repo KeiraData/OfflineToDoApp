@@ -1,114 +1,54 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- * @flow strict-local
- */
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+import { applyMiddleware, createStore, compose } from 'redux';
+import thunk from 'redux-thunk';
+import { logger } from 'redux-logger';
+import { offline } from '@redux-offline/redux-offline';
+import offlineConfig from '@redux-offline/redux-offline/lib/defaults';
+import { Provider, useDispatch, useSelector } from 'react-redux';
+import rootReducer from './reducers/rootReducer';
+import { fetchTodos } from './actions/todoActions';
+import { Button } from 'react-native-elements'
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
 
-const Section = ({children, title}) => {
-  const isDarkMode = useColorScheme() === 'dark';
+const store = createStore(
+  rootReducer,
+  compose(
+    applyMiddleware(
+      thunk,
+      logger
+    ),
+    offline(offlineConfig)
+  )
+);
+
+const WrapperApp = () => {
   return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
+    <Provider store={store}>
+      <App />
+    </Provider>
   );
-};
+}
 
 const App = () => {
-  const isDarkMode = useColorScheme() === 'dark';
+  const dispatch = useDispatch();
+  const todos = useSelector(state => state.todos);
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
+  useEffect(() => {
+    dispatch(fetchTodos());
+  }, []);
+
+  const showTodos = () => {
+    console.log('Tareas pendientes:');
+    console.log(todos);
+  }
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={backgroundStyle}>
-        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-        <ScrollView
-          contentInsetAdjustmentBehavior="automatic"
-          style={backgroundStyle}>
-          <Header />
-          <View
-            style={{
-              backgroundColor: isDarkMode ? Colors.black : Colors.white,
-            }}>
-            <Section title="Step One">
-              Edit <Text style={styles.highlight}>App.js</Text> to change this
-              screen and then come back to see your edits.
-            </Section>
-            <Section title="See Your Changes">
-              <ReloadInstructions />
-            </Section>
-            <Section title="Debug">
-              <DebugInstructions />
-            </Section>
-            <Section title="Learn More">
-              Read the docs to discover what to do next:
-            </Section>
-            <LearnMoreLinks />
-          </View>
-        </ScrollView>
-      </SafeAreaView>
+      <Button onPress={showTodos} title="Show Todos"  />
     </SafeAreaProvider>
   );
 };
 
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-});
 
-export default App;
+export default WrapperApp;
